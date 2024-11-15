@@ -36,6 +36,9 @@ class DiagramCanvas {
     private offsetY: number = 0;
     private nodeIdx: number = 0;    // increases only with addnode
     private edgeIdx: number = 0;    // increases only with addedge
+    private textSize = 16;
+    private textColor = "black";
+    private borderColor = "red"
 
     // private viewport = { x: 0, y: 0, width: 1000, height: 1000, scale: 1 }; // Manage visible area
     private viewport = { scale: 1, translateX: 0, translateY: 0 };
@@ -46,7 +49,7 @@ class DiagramCanvas {
         this.wrapper.style.position = "relative";
         this.wrapper.style.width = "100%";
         this.wrapper.style.height = "100%";
-        this.wrapper.style.overflow = "hidden";
+        this.wrapper.style.overflow = "visible"; // hidden in container
         this.wrapper.style.transformOrigin = "0 0";        
         this.canvas = document.createElement("canvas");
         this.canvas.width = width;
@@ -111,12 +114,14 @@ class DiagramCanvas {
 
 
     zoomin(): void {
-        this.viewport.scale *= 1.1;
+        const scale = this.viewport.scale * 1.1;
+        this.viewport.scale = scale < 1 ? scale : 1;
         this.updateViewport();
     }
 
     zoomout(): void {
-        this.viewport.scale /= 1.1;
+        const scale = this.viewport.scale / 1.1;
+        this.viewport.scale = scale > .2 ?  scale : .2
         this.updateViewport();
     }
 
@@ -126,6 +131,30 @@ class DiagramCanvas {
         this.updateViewport();
     }
 
+    resetView(): void {
+        // Reset to 0,0
+        this.viewport.translateX = 0;
+        this.viewport.translateY = 0;
+        // this.viewport.scale = 1;
+        // Update the viewport transformation
+        this.updateViewport();
+    }
+    center(): void {
+        // Calculate the center of the canvas and the container
+        const containerCenterX = this.container.clientWidth / 2;
+        const containerCenterY = this.container.clientHeight / 2;
+    
+        const canvasCenterX = this.canvas.width / 2;
+        const canvasCenterY = this.canvas.height / 2;
+    
+        // Calculate translation needed to center the canvas in the viewport
+        this.viewport.translateX = containerCenterX - canvasCenterX * this.viewport.scale;
+        this.viewport.translateY = containerCenterY - canvasCenterY * this.viewport.scale;
+    
+        // Update the viewport transformation
+        this.updateViewport();
+    }
+    
 
     private clearContainer(): void {
         // Clear the wrapper's visible area
@@ -173,9 +202,12 @@ class DiagramCanvas {
 
             // Draw edge label
             if (edge.label) {
-                this.context.fillStyle = "black";
-                this.context.font = "12px Arial";
-                this.context.fillText(edge.label, midX, midY - 5); // Position slightly above the line
+                this.context.fillStyle = this.textColor;
+                this.context.font = `${this.textSize}px Arial`;
+                this.context.textAlign = "center";
+                this.context.textBaseline = "middle";
+                this.context.strokeStyle = this.borderColor;
+                this.context.fillText(edge.label, midX, midY - 8); // Position slightly above the line
             }
 
 
@@ -240,12 +272,13 @@ class DiagramCanvas {
 
             // Draw node label
             if (node.label) {
-                this.context.fillStyle = node.labelColor || "black";
-                this.context.font = "12px Arial";
+                this.context.fillStyle = this.textColor;
+                this.context.font = `${this.textSize}px Arial`;
                 this.context.textAlign = "center";
-                this.context.textBaseline = "middle";
+                this.context.textBaseline = "bottom";
+                this.context.strokeStyle = this.borderColor;
                 const centerX = node.x + halfSize;
-                const centerY = node.y + halfSize;
+                const centerY = node.y - 4 ;
                 this.context.fillText(node.label, centerX, centerY);
             }
         }

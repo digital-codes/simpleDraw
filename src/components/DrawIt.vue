@@ -5,21 +5,23 @@ import { DiagramCanvas, NodeConfig, EdgeConfig } from '../services/drawCore';
 
 const container = ref(null);
 const ready = ref(false)
-const diagram = ref(null)
+const diagram = ref()
 
 onMounted(() => {
   // Create a container and initialize the canvas
   console.log(container.value)
-  diagram.value = new DiagramCanvas(container.value!, 300, 400);
+  diagram.value = new DiagramCanvas(container.value!, 2000, 2000);
   ready.value = true
 
+  diagram.value.resetView()
   // Add nodes
+  // const node1 = (diagram.value as unknown as DiagramCanvas).addNode({
   const node1 = diagram.value.addNode({
-    label:"Node 1",
+      label:"Node 1",
     shape: "circle",
     x: 50,
     y: 50,
-    size: 80,
+    size: 60,
     color: "lightblue",
     borderColor: "black",
     borderWidth: 2
@@ -30,7 +32,7 @@ onMounted(() => {
     shape:"square",
     x: 150,
     y: 200,
-    size: 80,
+    size: 60,
     color: "lightgreen",
     borderColor: "black",
     borderWidth: 2
@@ -41,7 +43,7 @@ onMounted(() => {
     from: node1,
     to: node2,
     color: "gray",
-    width: 2,
+    width: 3,
     label: "Link",
     selected: false
   });
@@ -67,8 +69,9 @@ diagramCanvas.pan(100, 50);
 
 <template>
   <div v-if="ready">
-  <button @click="diagram.zoomin()">Zoom In</button>
-  <button @click="diagram.zoomout()">Zoom out</button>
+    <button @click="diagram.resetView()">Center</button>
+    <button @click="diagram.zoomin()">Zoom In</button>
+    <button @click="diagram.zoomout()">Zoom out</button>
   <button @click="diagram.pan(100,50)">PanL</button>
   <button @click="diagram.pan(-100,-50)">PanR</button>
   </div>
