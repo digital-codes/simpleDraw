@@ -1,19 +1,20 @@
 interface NodeConfig {
-    id: string;
+    id?: string;
     x: number;
     y: number;
     size: number;
     color: string;
     borderColor: string;
     borderWidth: number;
-    selected: boolean;
+    selected?: boolean;
+    active?: boolean;
     shape?: "square" | "circle" | "star"; // New shape options,
     label?: string; // New property for node labels
     labelColor?: string; // Optional label text color    
 }
 
 interface EdgeConfig {
-    id: string;
+    id?: string;
     from: string;
     to: string;
     color: string;
@@ -23,6 +24,7 @@ interface EdgeConfig {
 }
 
 class DiagramCanvas {
+    private container: HTMLElement;
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
     private nodes: NodeConfig[] = [];
@@ -31,8 +33,13 @@ class DiagramCanvas {
     private selectedNode: NodeConfig | null = null;
     private offsetX: number = 0;
     private offsetY: number = 0;
+    private nodeIdx: number = 0;    // increases only with addnode
+    private edgeIdx: number = 0;    // increases only with addedge
+
+    private viewport = { x: 0, y: 0, width: 1000, height: 1000, scale: 1 }; // Manage visible area
 
     constructor(container: HTMLElement, width: number, height: number) {
+        this.container = container;
         this.canvas = document.createElement("canvas");
         this.canvas.width = width;
         this.canvas.height = height;
@@ -46,16 +53,27 @@ class DiagramCanvas {
         this.render();
     }
 
-    addNode(config: NodeConfig): void {
+    addNode(config: NodeConfig): string {
+        this.nodeIdx++;
+        const id = config.id || `node-${this.nodeIdx}`;
+        config.id = id
+        config.selected = config.selected || false;
+        config.active = config.active || false;
         this.nodes.push(config);
         console.log("nodes:", this.nodes);
         this.render();
+        return id
     }
 
-    addEdge(config: EdgeConfig): void {
+    addEdge(config: EdgeConfig): string {
+        this.edgeIdx++;
+        const id = config.id || `edge-${this.edgeIdx}`;
+        config.id = id
+        config.selected = config.selected || false;
         this.edges.push(config);
         console.log("edges:", this.edges);
         this.render();
+        return id
     }
 
     removeNode(id: string): void {
@@ -81,8 +99,62 @@ class DiagramCanvas {
         this.render();
     }
 
+
+    zoomin(): void {
+        const prevScale = this.viewport.scale;
+        this.viewport.scale *= 1.1; // Increase scale by 10%
+    
+        // Adjust viewport to maintain center position
+        const containerCenterX = this.container.clientWidth / 2;
+        const containerCenterY = this.container.clientHeight / 2;
+    
+        const worldCenterX = this.viewport.x + containerCenterX / prevScale;
+        const worldCenterY = this.viewport.y + containerCenterY / prevScale;
+    
+        this.viewport.x = worldCenterX - containerCenterX / this.viewport.scale;
+        this.viewport.y = worldCenterY - containerCenterY / this.viewport.scale;
+    
+        this.render();
+    }
+    
+    zoomout(): void {
+        const prevScale = this.viewport.scale;
+        this.viewport.scale /= 1.1; // Decrease scale by 10%
+    
+        // Adjust viewport to maintain center position
+        const containerCenterX = this.container.clientWidth / 2;
+        const containerCenterY = this.container.clientHeight / 2;
+    
+        const worldCenterX = this.viewport.x + containerCenterX / prevScale;
+        const worldCenterY = this.viewport.y + containerCenterY / prevScale;
+    
+        this.viewport.x = worldCenterX - containerCenterX / this.viewport.scale;
+        this.viewport.y = worldCenterY - containerCenterY / this.viewport.scale;
+    
+        this.render();
+    }
+    
+    pan(dx: number, dy: number): void {
+        console.log('pan');
+        this.viewport.x += dx / this.viewport.scale; // Adjust based on scale
+        this.viewport.y += dy / this.viewport.scale; // Adjust based on scale
+        this.render();
+    }
+
+
     private render(): void {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        const { x, y, width, height, scale } = this.viewport;
+        console.log('render', x, y, width, height, scale);
+
+        this.context.save();
+
+        // Apply transformations for zoom and pan
+        this.context.scale(scale, scale);
+        this.context.translate(-x, -y);
+
+       // Clear the entire canvas
+       this.context.clearRect(0, 0, this.canvas.width / scale, this.canvas.height / scale);
 
         // Draw edges
         for (const edge of this.edges) {
@@ -143,28 +215,29 @@ class DiagramCanvas {
         }
 
         // Draw nodes
-        // Draw nodes
         for (const node of this.nodes) {
             this.context.fillStyle = this.selectedNode === node ? "yellow" : node.color;
             this.context.strokeStyle = node.borderColor;
             this.context.lineWidth = node.borderWidth;
 
+            const halfSize = node.size / 2;
+
             // Draw node shape
-            if (node.shape === "circle") {
-                const radius = node.size / 2;
+            const shape = node.selected ? "star" : node.shape;
+            if (shape === "circle") {
                 this.context.beginPath();
                 this.context.arc(
-                    node.x + radius,
-                    node.y + radius,
-                    radius,
+                    node.x + halfSize,
+                    node.y + halfSize,
+                    halfSize,
                     0,
                     Math.PI * 2
                 );
                 this.context.closePath();
                 this.context.fill();
                 this.context.stroke();
-            } else if (node.shape === "star") {
-                this.drawStar(node.x + node.size / 2, node.y + node.size / 2, 5, node.size / 2, node.size / 4);
+            } else if (shape === "star") {
+                this.drawStar(node.x + halfSize, node.y + halfSize, 5, halfSize, halfSize / 2);
                 this.context.fill();
                 this.context.stroke();
             } else {
@@ -179,11 +252,12 @@ class DiagramCanvas {
                 this.context.font = "12px Arial";
                 this.context.textAlign = "center";
                 this.context.textBaseline = "middle";
-                const centerX = node.x + node.size / 2;
-                const centerY = node.y + node.size / 2;
+                const centerX = node.x + halfSize;
+                const centerY = node.y + halfSize;
                 this.context.fillText(node.label, centerX, centerY);
             }
         }
+        this.context.restore();
     }
 
     private drawStar(cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number): void {
@@ -198,7 +272,6 @@ class DiagramCanvas {
         this.context.closePath();
     }
 
-
     private addEventListeners(): void {
         let isDragging = false; // Track if a node is being dragged
 
@@ -206,7 +279,19 @@ class DiagramCanvas {
             console.log('pointerdown');
             const { offsetX, offsetY } = event;
             isDragging = false;
-            this.selectedNode = null;
+            //this.selectedNode = null;
+            if (this.selectedNode) {
+                if (!(
+                    offsetX >= this.selectedNode.x &&
+                    offsetX <= this.selectedNode.x + this.selectedNode.size &&
+                    offsetY >= this.selectedNode.y &&
+                    offsetY <= this.selectedNode.y + this.selectedNode.size
+                )) {
+                    console.log('unselect the node', this.selectedNode.id);
+                    this.selectedNode.selected = false;
+                    this.selectedNode = null;
+                }
+            }
 
             // Check if a node was clicked for dragging or selection
             for (const node of this.nodes) {
@@ -286,8 +371,8 @@ class DiagramCanvas {
                 this.selectedNode.x = offsetX - this.offsetX;
                 this.selectedNode.y = offsetY - this.offsetY;
                 this.render();
-                console.log("Nodes:", this.nodes);
-                console.log("Edges:", this.edges);
+                //console.log("Nodes:", this.nodes);
+                //console.log("Edges:", this.edges);
             }
         });
 
