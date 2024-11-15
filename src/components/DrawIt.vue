@@ -10,7 +10,7 @@ const diagram = ref(null)
 onMounted(() => {
   // Create a container and initialize the canvas
   console.log(container.value)
-  diagram.value = new DiagramCanvas(container.value!, 800, 600);
+  diagram.value = new DiagramCanvas(container.value!, 300, 400);
   ready.value = true
 
   // Add nodes
@@ -28,7 +28,7 @@ onMounted(() => {
   const node2 = diagram.value.addNode({
     label:"Node 2",
     shape:"square",
-    x: 300,
+    x: 150,
     y: 200,
     size: 80,
     color: "lightgreen",
@@ -77,8 +77,8 @@ diagramCanvas.pan(100, 50);
 
 <style scoped>
 .container {
-  width: 800px;
-  height: 600px;
+  width: 300px;
+  height: 400px;
   border: solid 1px black;
   overflow:hidden;
 }

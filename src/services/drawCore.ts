@@ -133,6 +133,7 @@ class DiagramCanvas {
     }
 
     private updateViewport(): void {
+        console.log('rendering',this.canvas.width, this.canvas.height, this.viewport.scale, this.viewport.translateX, this.viewport.translateY);
         this.wrapper.style.transform = `
             translate(${this.viewport.translateX}px, ${this.viewport.translateY}px)
             scale(${this.viewport.scale})
@@ -144,6 +145,8 @@ class DiagramCanvas {
 
         this.clearContainer(); // Ensure no leftover graphics
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        console.log('rendering',this.canvas.width, this.canvas.height, this.viewport.scale, this.viewport.translateX, this.viewport.translateY);
 
         // Draw edges
         for (const edge of this.edges) {
