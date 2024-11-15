@@ -2,12 +2,14 @@ interface NodeConfig {
     id: string;
     x: number;
     y: number;
-    width: number;
-    height: number;
+    size: number;
     color: string;
     borderColor: string;
     borderWidth: number;
     selected: boolean;
+    shape?: "square" | "circle" | "star"; // New shape options,
+    label?: string; // New property for node labels
+    labelColor?: string; // Optional label text color    
 }
 
 interface EdgeConfig {
@@ -88,10 +90,10 @@ class DiagramCanvas {
             const toNode = this.nodes.find(node => node.id === edge.to);
             if (!fromNode || !toNode) continue;
 
-            const startX = fromNode.x + fromNode.width / 2;
-            const startY = fromNode.y + fromNode.height / 2;
-            const endX = toNode.x + toNode.width / 2;
-            const endY = toNode.y + toNode.height / 2;
+            const startX = fromNode.x + fromNode.size / 2;
+            const startY = fromNode.y + fromNode.size / 2;
+            const endX = toNode.x + toNode.size / 2;
+            const endY = toNode.y + toNode.size / 2;
 
             this.context.strokeStyle = edge.color;
             this.context.lineWidth = this.selectedEdge === edge ? edge.width + 2 : edge.width;
@@ -100,39 +102,102 @@ class DiagramCanvas {
             this.context.lineTo(endX, endY);
             this.context.stroke();
 
-            const arrowSize = 6;
+
+            // Calculate midpoint for label and arrow
+            const midX = (startX + endX) / 2;
+            const midY = (startY + endY) / 2;
+
+            // Draw edge label
+            if (edge.label) {
+                this.context.fillStyle = "black";
+                this.context.font = "12px Arial";
+                this.context.fillText(edge.label, midX, midY - 5); // Position slightly above the line
+            }
+
+
+            // Position arrow to the right of the label
+            const arrowOffsetX = (endX - startX) / Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2) * 20;
+            const arrowOffsetY = (endY - startY) / Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2) * 20;
+
+            const arrowX = midX + arrowOffsetX;
+            const arrowY = midY + arrowOffsetY;
+
+            // Draw arrowhead
+            const arrowSize = 10;
             const angle = Math.atan2(endY - startY, endX - startX);
             this.context.beginPath();
-            this.context.moveTo(endX, endY);
+            this.context.moveTo(arrowX, arrowY);
             this.context.lineTo(
-                endX - arrowSize * Math.cos(angle - Math.PI / 6),
-                endY - arrowSize * Math.sin(angle - Math.PI / 6)
+                arrowX - arrowSize * Math.cos(angle - Math.PI / 6),
+                arrowY - arrowSize * Math.sin(angle - Math.PI / 6)
             );
             this.context.lineTo(
-                endX - arrowSize * Math.cos(angle + Math.PI / 6),
-                endY - arrowSize * Math.sin(angle + Math.PI / 6)
+                arrowX - arrowSize * Math.cos(angle + Math.PI / 6),
+                arrowY - arrowSize * Math.sin(angle + Math.PI / 6)
             );
+
             this.context.closePath();
             this.context.fillStyle = edge.color;
             this.context.fill();
 
-            if (edge.label) {
-                this.context.fillStyle = "black";
-                this.context.font = "12px Arial";
-                this.context.fillText(edge.label, (startX + endX) / 2, (startY + endY) / 2);
-            }
         }
 
         // Draw nodes
+        // Draw nodes
         for (const node of this.nodes) {
-            this.context.fillStyle = this.selectedNode === node ? "yellow" : node.color; // Highlight selected node
-            this.context.fillRect(node.x, node.y, node.width, node.height);
-
+            this.context.fillStyle = this.selectedNode === node ? "yellow" : node.color;
             this.context.strokeStyle = node.borderColor;
             this.context.lineWidth = node.borderWidth;
-            this.context.strokeRect(node.x, node.y, node.width, node.height);
+
+            // Draw node shape
+            if (node.shape === "circle") {
+                const radius = node.size / 2;
+                this.context.beginPath();
+                this.context.arc(
+                    node.x + radius,
+                    node.y + radius,
+                    radius,
+                    0,
+                    Math.PI * 2
+                );
+                this.context.closePath();
+                this.context.fill();
+                this.context.stroke();
+            } else if (node.shape === "star") {
+                this.drawStar(node.x + node.size / 2, node.y + node.size / 2, 5, node.size / 2, node.size / 4);
+                this.context.fill();
+                this.context.stroke();
+            } else {
+                // Default to square
+                this.context.fillRect(node.x, node.y, node.size, node.size);
+                this.context.strokeRect(node.x, node.y, node.size, node.size);
+            }
+
+            // Draw node label
+            if (node.label) {
+                this.context.fillStyle = node.labelColor || "black";
+                this.context.font = "12px Arial";
+                this.context.textAlign = "center";
+                this.context.textBaseline = "middle";
+                const centerX = node.x + node.size / 2;
+                const centerY = node.y + node.size / 2;
+                this.context.fillText(node.label, centerX, centerY);
+            }
         }
     }
+
+    private drawStar(cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number): void {
+        const step = Math.PI / spikes;
+        this.context.beginPath();
+        for (let i = 0; i < spikes * 2; i++) {
+            const radius = i % 2 === 0 ? outerRadius : innerRadius;
+            const x = cx + Math.cos(i * step) * radius;
+            const y = cy + Math.sin(i * step) * radius;
+            this.context.lineTo(x, y);
+        }
+        this.context.closePath();
+    }
+
 
     private addEventListeners(): void {
         let isDragging = false; // Track if a node is being dragged
@@ -148,9 +213,9 @@ class DiagramCanvas {
                 console.log('checking node', node.id);
                 if (
                     offsetX >= node.x &&
-                    offsetX <= node.x + node.width &&
+                    offsetX <= node.x + node.size &&
                     offsetY >= node.y &&
-                    offsetY <= node.y + node.height
+                    offsetY <= node.y + node.size
                 ) {
                     // unselect any edge
                     if (this.selectedEdge) {
@@ -186,10 +251,10 @@ class DiagramCanvas {
                 const toNode = this.nodes.find(node => node.id === edge.to);
                 if (!fromNode || !toNode) continue;
 
-                const startX = fromNode.x + fromNode.width / 2;
-                const startY = fromNode.y + fromNode.height / 2;
-                const endX = toNode.x + toNode.width / 2;
-                const endY = toNode.y + toNode.height / 2;
+                const startX = fromNode.x + fromNode.size / 2;
+                const startY = fromNode.y + fromNode.size / 2;
+                const endX = toNode.x + toNode.size / 2;
+                const endY = toNode.y + toNode.size / 2;
 
                 const distance = Math.abs(
                     ((endY - startY) * offsetX - (endX - startX) * offsetY + endX * startY - endY * startX) /
@@ -221,6 +286,8 @@ class DiagramCanvas {
                 this.selectedNode.x = offsetX - this.offsetX;
                 this.selectedNode.y = offsetY - this.offsetY;
                 this.render();
+                console.log("Nodes:", this.nodes);
+                console.log("Edges:", this.edges);
             }
         });
 

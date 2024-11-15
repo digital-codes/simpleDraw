@@ -15,10 +15,11 @@ onMounted(() => {
   // Add nodes
   diagram.addNode({
     id: "node1",
+    label:"Node 1",
+    shape: "circle",
     x: 50,
     y: 50,
-    width: 100,
-    height: 50,
+    size: 80,
     color: "lightblue",
     borderColor: "black",
     borderWidth: 2,
@@ -27,10 +28,11 @@ onMounted(() => {
 
   diagram.addNode({
     id: "node2",
+    label:"Node 2",
+    shape:"star",
     x: 300,
     y: 200,
-    width: 100,
-    height: 50,
+    size: 80,
     color: "lightgreen",
     borderColor: "black",
     borderWidth: 2,
