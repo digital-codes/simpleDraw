@@ -21,7 +21,8 @@ onMounted(() => {
     height: 50,
     color: "lightblue",
     borderColor: "black",
-    borderWidth: 2
+    borderWidth: 2,
+    selected: false
   });
 
   diagram.addNode({
@@ -32,16 +33,19 @@ onMounted(() => {
     height: 50,
     color: "lightgreen",
     borderColor: "black",
-    borderWidth: 2
+    borderWidth: 2,
+    selected: false
   });
 
   // Add an edge
   diagram.addEdge({
+    id: "edge1",
     from: "node1",
     to: "node2",
     color: "gray",
     width: 2,
-    label: "Link"
+    label: "Link",
+    selected: false
   });
 
   // Remove node or edge later if needed
