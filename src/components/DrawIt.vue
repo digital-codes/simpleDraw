@@ -80,5 +80,6 @@ diagramCanvas.pan(100, 50);
   width: 800px;
   height: 600px;
   border: solid 1px black;
+  overflow:hidden;
 }
 </style>

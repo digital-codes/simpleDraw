@@ -25,6 +25,7 @@ interface EdgeConfig {
 
 class DiagramCanvas {
     private container: HTMLElement;
+    private wrapper: HTMLElement; // Parent div for viewport manipulations
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
     private nodes: NodeConfig[] = [];
@@ -36,14 +37,23 @@ class DiagramCanvas {
     private nodeIdx: number = 0;    // increases only with addnode
     private edgeIdx: number = 0;    // increases only with addedge
 
-    private viewport = { x: 0, y: 0, width: 1000, height: 1000, scale: 1 }; // Manage visible area
+    // private viewport = { x: 0, y: 0, width: 1000, height: 1000, scale: 1 }; // Manage visible area
+    private viewport = { scale: 1, translateX: 0, translateY: 0 };
 
     constructor(container: HTMLElement, width: number, height: number) {
         this.container = container;
+        this.wrapper = document.createElement("div");
+        this.wrapper.style.position = "relative";
+        this.wrapper.style.width = "100%";
+        this.wrapper.style.height = "100%";
+        this.wrapper.style.overflow = "hidden";
+        this.wrapper.style.transformOrigin = "0 0";        
         this.canvas = document.createElement("canvas");
         this.canvas.width = width;
         this.canvas.height = height;
-        container.appendChild(this.canvas);
+
+        this.wrapper.appendChild(this.canvas);
+        container.appendChild(this.wrapper);
 
         const context = this.canvas.getContext("2d");
         if (!context) throw new Error("Canvas context could not be initialized");
@@ -101,60 +111,39 @@ class DiagramCanvas {
 
 
     zoomin(): void {
-        const prevScale = this.viewport.scale;
-        this.viewport.scale *= 1.1; // Increase scale by 10%
-    
-        // Adjust viewport to maintain center position
-        const containerCenterX = this.container.clientWidth / 2;
-        const containerCenterY = this.container.clientHeight / 2;
-    
-        const worldCenterX = this.viewport.x + containerCenterX / prevScale;
-        const worldCenterY = this.viewport.y + containerCenterY / prevScale;
-    
-        this.viewport.x = worldCenterX - containerCenterX / this.viewport.scale;
-        this.viewport.y = worldCenterY - containerCenterY / this.viewport.scale;
-    
-        this.render();
-    }
-    
-    zoomout(): void {
-        const prevScale = this.viewport.scale;
-        this.viewport.scale /= 1.1; // Decrease scale by 10%
-    
-        // Adjust viewport to maintain center position
-        const containerCenterX = this.container.clientWidth / 2;
-        const containerCenterY = this.container.clientHeight / 2;
-    
-        const worldCenterX = this.viewport.x + containerCenterX / prevScale;
-        const worldCenterY = this.viewport.y + containerCenterY / prevScale;
-    
-        this.viewport.x = worldCenterX - containerCenterX / this.viewport.scale;
-        this.viewport.y = worldCenterY - containerCenterY / this.viewport.scale;
-    
-        this.render();
-    }
-    
-    pan(dx: number, dy: number): void {
-        console.log('pan');
-        this.viewport.x += dx / this.viewport.scale; // Adjust based on scale
-        this.viewport.y += dy / this.viewport.scale; // Adjust based on scale
-        this.render();
+        this.viewport.scale *= 1.1;
+        this.updateViewport();
     }
 
+    zoomout(): void {
+        this.viewport.scale /= 1.1;
+        this.updateViewport();
+    }
+
+    pan(dx: number, dy: number): void {
+        this.viewport.translateX += dx;
+        this.viewport.translateY += dy;
+        this.updateViewport();
+    }
+
+
+    private clearContainer(): void {
+        // Clear the wrapper's visible area
+        this.wrapper.style.background = "white"; // Optional: Reset background color
+    }
+
+    private updateViewport(): void {
+        this.wrapper.style.transform = `
+            translate(${this.viewport.translateX}px, ${this.viewport.translateY}px)
+            scale(${this.viewport.scale})
+        `;
+        this.clearContainer();
+    }
 
     private render(): void {
 
-        const { x, y, width, height, scale } = this.viewport;
-        console.log('render', x, y, width, height, scale);
-
-        this.context.save();
-
-        // Apply transformations for zoom and pan
-        this.context.scale(scale, scale);
-        this.context.translate(-x, -y);
-
-       // Clear the entire canvas
-       this.context.clearRect(0, 0, this.canvas.width / scale, this.canvas.height / scale);
+        this.clearContainer(); // Ensure no leftover graphics
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Draw edges
         for (const edge of this.edges) {
@@ -257,7 +246,6 @@ class DiagramCanvas {
                 this.context.fillText(node.label, centerX, centerY);
             }
         }
-        this.context.restore();
     }
 
     private drawStar(cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number): void {
@@ -275,7 +263,7 @@ class DiagramCanvas {
     private addEventListeners(): void {
         let isDragging = false; // Track if a node is being dragged
 
-        this.canvas.addEventListener("pointerdown", (event) => {
+        this.wrapper.addEventListener("pointerdown", (event) => {
             console.log('pointerdown');
             const { offsetX, offsetY } = event;
             isDragging = false;
@@ -365,7 +353,7 @@ class DiagramCanvas {
             this.render();
         });
 
-        this.canvas.addEventListener("pointermove", (event) => {
+        this.wrapper.addEventListener("pointermove", (event) => {
             if (this.selectedNode && isDragging) {
                 const { offsetX, offsetY } = event;
                 this.selectedNode.x = offsetX - this.offsetX;
@@ -376,11 +364,11 @@ class DiagramCanvas {
             }
         });
 
-        this.canvas.addEventListener("pointerup", () => {
+        this.wrapper.addEventListener("pointerup", () => {
             isDragging = false; // Stop dragging
         });
 
-        this.canvas.addEventListener("pointercancel", () => {
+        this.wrapper.addEventListener("pointercancel", () => {
             isDragging = false; // Handle gesture cancellation (e.g., multitouch interruption)
         });
     }
