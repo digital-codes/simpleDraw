@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-import { DiagramCanvas, NodeConfig, EdgeConfig } from '../services/drawCore';
+import DataPipes from 'datapipes'
 
 const container = ref(null);
 const ready = ref(false)
@@ -10,20 +10,18 @@ const diagram = ref()
 onMounted(() => {
   // Create a container and initialize the canvas
   console.log(container.value)
-  diagram.value = new DiagramCanvas(container.value!, 2000, 2000);
+  diagram.value = new DataPipes(container.value!, 2000, 2000);
   ready.value = true
 
   diagram.value.resetView()
   // Add nodes
-  // const node1 = (diagram.value as unknown as DiagramCanvas).addNode({
+  // const node1 = (diagram.value as unknown as DataPipes).addNode({
   const node1 = diagram.value.addNode({
       label:"Node 1",
     shape: "circle",
     x: 50,
     y: 50,
     size: 60,
-    color: "lightblue",
-    borderColor: "black",
     borderWidth: 2
   });
 
@@ -33,8 +31,6 @@ onMounted(() => {
     x: 150,
     y: 200,
     size: 60,
-    color: "lightgreen",
-    borderColor: "black",
     borderWidth: 2
   });
 
@@ -43,7 +39,6 @@ onMounted(() => {
     x: 150,
     y: 300,
     size: 60,
-    color: "white"
   });
 
   // Add an edge
