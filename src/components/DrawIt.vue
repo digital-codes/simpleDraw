@@ -38,14 +38,23 @@ onMounted(() => {
     borderWidth: 2
   });
 
+  const node3 = diagram.value.addNode({
+    label:"Node 3",
+    x: 150,
+    y: 300,
+    size: 60,
+    color: "white"
+  });
+
   // Add an edge
   diagram.value.addEdge({
     from: node1,
     to: node2,
-    color: "gray",
-    width: 3,
-    label: "Link",
-    selected: false
+    label: "Link"
+  });
+  diagram.value.addEdge({
+    from: node1,
+    to: node3
   });
 
 })
@@ -68,7 +77,7 @@ diagramCanvas.pan(100, 50);
 </script>
 
 <template>
-  <div v-if="ready">
+  <div class="ctl" v-if="ready">
     <button @click="diagram.resetView()">Center</button>
     <button @click="diagram.zoomin()">Zoom In</button>
     <button @click="diagram.zoomout()">Zoom out</button>
@@ -79,9 +88,19 @@ diagramCanvas.pan(100, 50);
 </template>
 
 <style scoped>
+.ctl {
+  display: flex;
+  justify-content: left;
+  margin: 10px;
+} 
+
 .container {
-  width: 300px;
-  height: 400px;
+  display:flex;
+  width:100%;
+  height: 75vh;
+  /*
+  max-height: inherit;
+  */
   border: solid 1px black;
   overflow:hidden;
 }

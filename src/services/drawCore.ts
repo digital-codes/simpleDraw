@@ -3,24 +3,21 @@ interface NodeConfig {
     x: number;
     y: number;
     size: number;
-    color: string;
-    borderColor: string;
-    borderWidth: number;
     selected?: boolean;
     active?: boolean;
     shape?: "square" | "circle" | "star"; // New shape options,
     label?: string; // New property for node labels
-    labelColor?: string; // Optional label text color    
+    icon?: string; // New property for node icons
 }
 
 interface EdgeConfig {
     id?: string;
     from: string;
+    fromType?: string;
     to: string;
-    color: string;
-    width: number;
+    toType?: string;
     label?: string;
-    selected: boolean;
+    selected?: boolean;
 }
 
 class DiagramCanvas {
@@ -39,18 +36,19 @@ class DiagramCanvas {
     private textSize = 16;
     private textColor = "black";
     private borderColor = "red"
+    private borderWidth = 2;
+    private edgeWidth = 3;
 
-    // private viewport = { x: 0, y: 0, width: 1000, height: 1000, scale: 1 }; // Manage visible area
     private viewport = { scale: 1, translateX: 0, translateY: 0 };
 
     constructor(container: HTMLElement, width: number, height: number) {
         this.container = container;
         this.wrapper = document.createElement("div");
         this.wrapper.style.position = "relative";
-        this.wrapper.style.width = "100%";
-        this.wrapper.style.height = "100%";
+        this.wrapper.style.width = `${width}px`//"100%";
+        this.wrapper.style.height = `${height}px`//"100%";
         this.wrapper.style.overflow = "visible"; // hidden in container
-        this.wrapper.style.transformOrigin = "0 0";        
+        this.wrapper.style.transformOrigin = "0 0";
         this.canvas = document.createElement("canvas");
         this.canvas.width = width;
         this.canvas.height = height;
@@ -83,6 +81,8 @@ class DiagramCanvas {
         const id = config.id || `edge-${this.edgeIdx}`;
         config.id = id
         config.selected = config.selected || false;
+        const label = config.label || `edge-${this.edgeIdx}`;
+        config.label = label;
         this.edges.push(config);
         console.log("edges:", this.edges);
         this.render();
@@ -114,14 +114,14 @@ class DiagramCanvas {
 
 
     zoomin(): void {
-        const scale = this.viewport.scale * 1.1;
+        const scale = this.viewport.scale * 1.2;
         this.viewport.scale = scale < 1 ? scale : 1;
         this.updateViewport();
     }
 
     zoomout(): void {
-        const scale = this.viewport.scale / 1.1;
-        this.viewport.scale = scale > .2 ?  scale : .2
+        const scale = this.viewport.scale / 1.2;
+        this.viewport.scale = scale > .25 ? scale : .25
         this.updateViewport();
     }
 
@@ -133,28 +133,40 @@ class DiagramCanvas {
 
     resetView(): void {
         // Reset to 0,0
+        const wwidth = window.innerWidth;
+        const wheight = window.innerHeight;
+        console.log('window size', wwidth, wheight);
+        const { width: containerWidth, height: containerHeight } = this.getContainerSize();
+        console.log('container size 1', containerWidth, containerHeight);
         this.viewport.translateX = 0;
         this.viewport.translateY = 0;
         // this.viewport.scale = 1;
         // Update the viewport transformation
         this.updateViewport();
     }
+
     center(): void {
         // Calculate the center of the canvas and the container
         const containerCenterX = this.container.clientWidth / 2;
         const containerCenterY = this.container.clientHeight / 2;
-    
+
         const canvasCenterX = this.canvas.width / 2;
         const canvasCenterY = this.canvas.height / 2;
-    
+
         // Calculate translation needed to center the canvas in the viewport
         this.viewport.translateX = containerCenterX - canvasCenterX * this.viewport.scale;
         this.viewport.translateY = containerCenterY - canvasCenterY * this.viewport.scale;
-    
+
         // Update the viewport transformation
         this.updateViewport();
     }
-    
+
+    private getContainerSize(): { width: number; height: number } {
+        return {
+            width: this.container.clientWidth,
+            height: this.container.clientHeight,
+        };
+    }
 
     private clearContainer(): void {
         // Clear the wrapper's visible area
@@ -162,7 +174,7 @@ class DiagramCanvas {
     }
 
     private updateViewport(): void {
-        console.log('rendering',this.canvas.width, this.canvas.height, this.viewport.scale, this.viewport.translateX, this.viewport.translateY);
+        console.log('rendering', this.canvas.width, this.canvas.height, this.viewport.scale, this.viewport.translateX, this.viewport.translateY);
         this.wrapper.style.transform = `
             translate(${this.viewport.translateX}px, ${this.viewport.translateY}px)
             scale(${this.viewport.scale})
@@ -175,7 +187,7 @@ class DiagramCanvas {
         this.clearContainer(); // Ensure no leftover graphics
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        console.log('rendering',this.canvas.width, this.canvas.height, this.viewport.scale, this.viewport.translateX, this.viewport.translateY);
+        console.log('rendering', this.canvas.width, this.canvas.height, this.viewport.scale, this.viewport.translateX, this.viewport.translateY);
 
         // Draw edges
         for (const edge of this.edges) {
@@ -188,8 +200,8 @@ class DiagramCanvas {
             const endX = toNode.x + toNode.size / 2;
             const endY = toNode.y + toNode.size / 2;
 
-            this.context.strokeStyle = edge.color;
-            this.context.lineWidth = this.selectedEdge === edge ? edge.width + 2 : edge.width;
+            this.context.strokeStyle = this.selectedEdge === edge ? this.borderColor : this.textColor
+            this.context.lineWidth = this.selectedEdge === edge ? this.edgeWidth + 2 : this.edgeWidth
             this.context.beginPath();
             this.context.moveTo(startX, startY);
             this.context.lineTo(endX, endY);
@@ -241,13 +253,13 @@ class DiagramCanvas {
         // Draw nodes
         for (const node of this.nodes) {
             this.context.fillStyle = this.selectedNode === node ? "yellow" : node.color;
-            this.context.strokeStyle = node.borderColor;
-            this.context.lineWidth = node.borderWidth;
+            this.context.strokeStyle = this.borderColor;
+            this.context.lineWidth = this.borderWidth;
 
             const halfSize = node.size / 2;
 
             // Draw node shape
-            const shape = node.selected ? "star" : node.shape;
+            const shape = node.active ? "star" : node.shape;
             if (shape === "circle") {
                 this.context.beginPath();
                 this.context.arc(
@@ -278,7 +290,7 @@ class DiagramCanvas {
                 this.context.textBaseline = "bottom";
                 this.context.strokeStyle = this.borderColor;
                 const centerX = node.x + halfSize;
-                const centerY = node.y - 4 ;
+                const centerY = node.y - 4;
                 this.context.fillText(node.label, centerX, centerY);
             }
         }
@@ -407,7 +419,15 @@ class DiagramCanvas {
         this.wrapper.addEventListener("pointercancel", () => {
             isDragging = false; // Handle gesture cancellation (e.g., multitouch interruption)
         });
+
+        if (window) {
+            window.addEventListener("resize", () => {
+                // Optionally re-center the canvas on resize
+                this.resetView();
+            });
+        }
     }
+
 
 }
 
