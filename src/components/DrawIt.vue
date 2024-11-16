@@ -7,10 +7,15 @@ const container = ref(null);
 const ready = ref(false)
 const diagram = ref()
 
+const evntName = "pup"
+const handle = (e: CustomEvent) => {
+  console.log('handle',e.detail)
+}
+
 onMounted(() => {
   // Create a container and initialize the canvas
   console.log(container.value)
-  diagram.value = new DataPipes(container.value!, 2000, 2000);
+  diagram.value = new DataPipes(container.value!, 2000, 2000,evntName);
   ready.value = true
 
   diagram.value.resetView()
@@ -79,7 +84,7 @@ diagramCanvas.pan(100, 50);
   <button @click="diagram.pan(100,50)">PanL</button>
   <button @click="diagram.pan(-100,-50)">PanR</button>
   </div>
-  <div ref="container" class="container"></div>
+  <div ref="container" class="container" @pup="handle"></div>
 </template>
 
 <style scoped>
