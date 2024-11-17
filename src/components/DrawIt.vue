@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue'
 
 import DataPipes from 'datapipes'
+import icon from '../assets/vite.svg'
+
 
 const container = ref(null);
 const ready = ref(false)
@@ -21,13 +23,15 @@ onMounted(() => {
   diagram.value.resetView()
   // Add nodes
   // const node1 = (diagram.value as unknown as DataPipes).addNode({
+
   const node1 = diagram.value.addNode({
       label:"Node 1",
     shape: "circle",
     x: 50,
     y: 50,
     size: 60,
-    borderWidth: 2
+    borderWidth: 2,
+    icon: icon
   });
 
   const node2 = diagram.value.addNode({
