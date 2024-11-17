@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 
 import DataPipes from 'datapipes'
+// tested with svg and jpg
 import icon from '../assets/vite.svg'
 
 
