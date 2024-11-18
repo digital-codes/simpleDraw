@@ -15,6 +15,8 @@ const handle = (e: CustomEvent) => {
   console.log('handle',e.detail)
 }
 
+const nodes = ref([])
+
 onMounted(() => {
   // Create a container and initialize the canvas
   console.log(container.value)
@@ -31,25 +33,25 @@ onMounted(() => {
     x: 50,
     y: 50,
     size: 60,
-    borderWidth: 2,
     icon: icon
   });
+  nodes.value.push(node1)
 
   const node2 = diagram.value.addNode({
-    label:"Node 2",
+    //label:"Node 2",
     shape:"square",
     x: 150,
     y: 200,
-    size: 60,
-    borderWidth: 2
+    size: 60
   });
+  nodes.value.push(node2)
 
   const node3 = diagram.value.addNode({
     label:"Node 3",
     x: 150,
     y: 300,
-    size: 60,
   });
+  nodes.value.push(node3)
 
   // Add an edge
   diagram.value.addEdge({
@@ -62,6 +64,7 @@ onMounted(() => {
     to: node3
   });
 
+  tgl()
 })
 
 /*
@@ -79,6 +82,14 @@ diagramCanvas.zoomin();
 diagramCanvas.zoomout();
 diagramCanvas.pan(100, 50);
 */
+
+const idx = ref(0)
+const tgl = async() => {
+  const shape = (idx.value++ % 2)?"circle":"star"
+  diagram.value.modifyNodeStyle(nodes.value[0],{shape:shape})
+  setTimeout(tgl,2000)
+}
+
 </script>
 
 <template>
