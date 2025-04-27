@@ -15,7 +15,7 @@ const handle = (e: CustomEvent) => {
   console.log('handle',e.detail)
 }
 
-const nodes = ref([])
+const nodes = ref<string[]>([])
 
 onMounted(() => {
   // Create a container and initialize the canvas
@@ -27,7 +27,7 @@ onMounted(() => {
   // Add nodes
   // const node1 = (diagram.value as unknown as DataPipes).addNode({
 
-  const node1 = diagram.value.addNode({
+  const node1: string = diagram.value.addNode({
       label:"Node 1",
     shape: "circle",
     x: 50,
@@ -37,7 +37,7 @@ onMounted(() => {
   });
   nodes.value.push(node1)
 
-  const node2 = diagram.value.addNode({
+  const node2: string = diagram.value.addNode({
     //label:"Node 2",
     shape:"square",
     x: 150,
@@ -46,7 +46,7 @@ onMounted(() => {
   });
   nodes.value.push(node2)
 
-  const node3 = diagram.value.addNode({
+  const node3: string = diagram.value.addNode({
     label:"Node 3",
     x: 150,
     y: 300,
